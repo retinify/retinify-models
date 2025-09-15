@@ -1,7 +1,7 @@
 name: release-guard
 on:
   release:
-    types: [published, edited]
+    types: [published, edited, released, prereleased]
 
 concurrency:
   group: release-guard-${{ github.repository }}-${{ github.event.release.id || github.run_id }}
@@ -39,10 +39,7 @@ jobs:
               return false;
             };
 
-            // Collect violating asset names
-            const violations = assets
-              .filter((a) => !hasAllowedExt(a.name))
-              .map((a) => a.name);
+            const violations = assets.filter(a => !hasAllowedExt(a.name)).map(a => a.name);
 
             core.info(`Release '${release.tag_name}' has ${assets.length} asset(s).`);
 
@@ -53,31 +50,26 @@ jobs:
 
             core.warning(`Forbidden assets detected: ${violations.join(", ")}`);
 
-            // Try to delete the release first
+            // Delete the release
             try {
               await github.request("DELETE /repos/{owner}/{repo}/releases/{release_id}", {
-                owner,
-                repo,
-                release_id: release.id,
+                owner, repo, release_id: release.id,
               });
               core.info(`Deleted release id=${release.id}.`);
             } catch (e) {
               core.warning(`Failed to delete release id=${release.id}: ${e.message}`);
             }
 
-            // Then delete the associated tag
+            // Delete the tag
             try {
               await github.request("DELETE /repos/{owner}/{repo}/git/refs/{ref}", {
-                owner,
-                repo,
-                ref: `tags/${release.tag_name}`,
+                owner, repo, ref: `tags/${release.tag_name}`,
               });
               core.info(`Deleted tag 'tags/${release.tag_name}'.`);
             } catch (e) {
               core.warning(`Failed to delete tag 'tags/${release.tag_name}': ${e.message}`);
             }
 
-            // Fail the workflow after cleanup attempt
             core.setFailed(
               `Release rejected: non-allowed assets found (${violations.join(", ")}). Only .onnx and .sha256 are permitted.`
             );
