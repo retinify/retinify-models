@@ -4,7 +4,7 @@ retinify-models
 
 The AI models used in retinify are available here and are licensed under retinify-EULA.
 
-Model architecture:  
+Model architecture: v0.1.0 or later.  
 The ONNX model is a derivative of the model from: https://github.com/kevinleestone/mmstereo.  
 
 Reference:  
